@@ -1,115 +1,146 @@
+console.log('Server Init');
 
+require('dotenv').config();
+const express = require('express');
+const inquirer = require('inquirer');
+const bcrypt = require('bcrypt');
+const app = express();
 
-console.log('Server Init')
+const User = require('./models/user');
+const Product = require('./models/product');
 
-const { response } = require('express')
-const express = require('express')
-require('dotenv').config()
-const Product = require('./models/product')
-const User = require('./models/user')
-const Bill = require('./models/bill')
-const Sell = require('./models/sell')
-const Order = require('./models/order')
-const Client = require('./models/client')
+app.use(express.json());
 
+// Mock data
+const notes = [
+  {
+    id: 1,
+    content: 'hola soy el numero 1',
+    date: '2022-05-30',
+    important: true
+  },
+  // ...
+];
 
-const app = express()
+const usuario = new User({ name: 'hola', password: '123', role: 'user_role' });
+const producto = new Product({ name: 'producto1', desc: 'lalala' });
+// End of mock data
 
-// mock
-var notes = [
-    {
-        "id": 1,
-        "content": "hola soy el numero 1",
-        "date": "2022-05-30",
-        "important": true
-    },
-    {
-        "id": 2,
-        "content": "hola soy el numero 2",
-        "date": "2022-01-20",
-        "important": false
-    },
-    {
-        "id": 3,
-        "content": "hola soy el numero 3",
-        "date": "2022-02-30",
-        "important": true
-    },
-    {
-        "id": 4,
-        "content": "hola soy el numero 4",
-        "date": "2022-03-10",
-        "important": false
-    }
+const promptSettings = () => {
+  inquirer
+    .prompt([
+      {
+        type: 'list',
+        name: 'port',
+        message: 'Choose the port number:',
+        choices: [8080, 2020, 3015, 7578, process.env.PORT || 3000],
+        default: process.env.PORT || 3000
+      },
+      {
+        type: 'list',
+        name: 'time',
+        message: 'Choose a number:',
+        choices: [1, 2, 3, 4, 5],
+        default: 2
+      },
+      {
+        type: 'input',
+        name: 'name',
+        message: 'Enter a name:',
+        default: ''
+      }
+    ])
+    .then((answers) => {
+      startServer(answers.port);
+      console.log(answers.time);
+      console.log(answers.name);
+    });
+};
 
-]
-const usuario = new User({ name: "hola", password: "123", role: "user_role" })
-const producto = new Product({ name: "producto1", desc: 'lalala' })
-// end mock
+app.get('/', (req, res) => {
+  res.send('<h1>Hello world</h1>');
+});
 
-app.use(express.json())
+app.get('/api/users', (req, res) => {
+  res.json(usuario);
+});
 
-app.get('/', (req, resp) => {
-    resp.send('<h1>HEllo world<h1>')
-})
+app.get('/api/products', (req, res) => {
+  res.json(producto);
+});
 
-app.get('/api/users', (req, resp) => {
-    resp.json(usuario)
-})
+app.get('/api/notes', (req, res) => {
+  res.json(notes);
+});
 
-app.get('/api/products', (req, resp) => {
-    resp.json(producto)
-})
+app.get('/api/notes/:id', (req, res) => {
+  const id = Number(req.params.id);
+  const note = notes.find((note) => note.id === id);
+  note ? res.json(note) : res.status(404).end();
+});
 
-app.get('/api/notes', (req, resp) => {
-    resp.json(notes)
-})
+app.delete('/api/notes/:id', (req, res) => {
+  const id = Number(req.params.id);
+  const updatedNotes = notes.filter((note) => note.id !== id);
+  if (updatedNotes.length === notes.length) {
+    res.status(404).json({ error: 'Note not found' });
+  } else {
+    notes = updatedNotes;
+    res.status(204).end();
+  }
+});
 
-app.get('/api/notes/:id', (req, resp) => {
-    const id = Number(req.params.id)
-    const note = notes.find(note => note.id === id)
-    note ? resp.json(note) : resp.status(404).end()
-})
+app.post('/api/notes', (req, res) => {
+  const note = req.body;
 
+  if (!note || !note.content) {
+    return res.status(400).json({
+      error: 'Note content is missing'
+    });
+  }
 
-app.get('/api/users/:id', (req, resp) => {
-    const id = Number(req.params.id)
-    const note = notes.find(note => note.id === id)
-    note ? resp.json(note) : resp.status(404).end()
-})
+  const maxId = Math.max(...notes.map((note) => note.id));
+  const newNote = {
+    id: maxId + 1,
+    content: note.content,
+    important: typeof note.important !== 'undefined' ? note.important : false,
+    date: new Date().toISOString()
+  };
 
+  notes = [...notes, newNote];
 
-app.delete('/api/notes/:id', (req, resp) => {
-    const id = Number(req.params.id)
-    notes = notes.filter(note => note.id !== id)
-    resp.status(204).end()
-})
+  res.json(newNote);
+});
 
-app.post('/api/notes', (req, resp) => {
-    const note = req.body
+app.post('/api/users', async (req, res) => {
+  const { name, password} = req.body;
 
-    if (!note || !note.content) return response.status(400).json({
-        error: 'note contente is missing'
-    })
+  if (!name || !password) {
+    return res.status(400).json({
+      error: 'Name or password is missing'
+    });
+  }
 
-    console.log(note)
+  try {
+    const hashedPassword = await bcrypt.hash(password, 10);
+    let newUser = new User({ name, password: hashedPassword});
 
-    const maxId = Math.max(...notes.map(note => note.id))
-    const newNote = {
-        id: maxId + 1,
-        content: note.content,
-        important: typeof note.important !== 'undefined' ? note.important : false,
-        date: new Date().toISOString()
-    }
+    // Save the user to the database or perform any necessary actions
+    // ...
+    console.log(newUser)
+    
 
+    res.status(201).json(newUser);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to create user' });
+  }
+});
 
-    notes = [...notes, newNote]
+const startServer = (port) => {
+  app.listen(port, () => {
+    console.log(`Server started on port ${port}`);
+  });
+};
 
-    resp.json(newNote)
-})
-
-
-
-app.listen(process.env.PORT, () => {
-    console.log(`Server on port ${process.env.PORT}`)
-})
+// Start the app by prompting for settings
+promptSettings();
