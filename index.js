@@ -1,3 +1,21 @@
+
+
+console.log('Server Init')
+
+const { response } = require('express')
+const express = require('express')
+require('dotenv').config()
+const Product = require('./models/product')
+const User = require('./models/user')
+const Bill = require('./models/bill')
+const Sell = require('./models/sell')
+const Order = require('./models/order')
+const Client = require('./models/client')
+
+
+const app = express()
+
+// mock
 var notes = [
     {
         "id": 1,
@@ -25,28 +43,14 @@ var notes = [
     }
 
 ]
-
-
-
-const { response } = require('express')
-const express = require('express')
-const Product = require('./models/product')
-const User = require('./models/user')
-const app = express()
-
-
 const usuario = new User({ name: "hola", password: "123", role: "user_role" })
 const producto = new Product({ name: "producto1", desc: 'lalala' })
-
+// end mock
 
 app.use(express.json())
 
 app.get('/', (req, resp) => {
     resp.send('<h1>HEllo world<h1>')
-})
-
-app.get('/api/notes', (req, resp) => {
-    resp.json(notes)
 })
 
 app.get('/api/users', (req, resp) => {
@@ -55,6 +59,10 @@ app.get('/api/users', (req, resp) => {
 
 app.get('/api/products', (req, resp) => {
     resp.json(producto)
+})
+
+app.get('/api/notes', (req, resp) => {
+    resp.json(notes)
 })
 
 app.get('/api/notes/:id', (req, resp) => {
@@ -102,7 +110,6 @@ app.post('/api/notes', (req, resp) => {
 
 
 
-const PORT = 3001
-app.listen(PORT, () => {
-    console.log(`Server on port ${PORT}`)
+app.listen(process.env.PORT, () => {
+    console.log(`Server on port ${process.env.PORT}`)
 })

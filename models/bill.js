@@ -1,6 +1,4 @@
 const { Schema, model } = require('mongoose')
-const LISTSIZE = 4
-
 
 const billSchema = new Schema({
     client: {type: Schema.Types.ObjectId, ref: 'Client' },
@@ -12,15 +10,14 @@ const billSchema = new Schema({
     type: {type: String, enum: ['A','B','C','N','P'], required: true},
     related: [{ type: Schema.Types.ObjectId, ref: 'Bill' }],
     updated: { type: Date, default: Date.now },
-    list: {type: Number, max: LISTSIZE, required: true},
+    list: {type: Number, max: process.env.LIST_SIZE, required: true},
     row : [{
         product: {type: Schema.Types.ObjectId, ref: 'Product'},
         name: String, 
         cost : {type: Number, default: 0},
         unit: {type: Number, default: 1},
         quantity: {type: Number, default: 1}
-         }],
-    errors: {type: Boolean, default: true}
+         }]
 })
  
 const Bill = model('Bill', billSchema)

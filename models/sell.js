@@ -14,7 +14,7 @@ const sellSchema = new Schema({
     row : [{
         bill: {type: Schema.Types.ObjectId, ref: 'Bill'},
          }],
-    errors: {type: Boolean, default: true}
+    hasErrors: {type: Boolean, default: true}
 })
  
 const Sell = model('Sell', sellSchema)
